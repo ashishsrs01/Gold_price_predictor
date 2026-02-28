@@ -216,3 +216,97 @@ print(f"Best Model Performance (Test Set):")
 print(f"  Accuracy (R² Score): {test_r2:.2%}")
 print(f"  Average Error: ${test_mae:.2f}")
 print(f"  Root Mean Squared Error: ${test_rmse:.2f}")
+
+# ---------------------------------------------------------
+# Future Price Prediction (Next 12 Months) - Recursive Approach
+# ---------------------------------------------------------
+
+print("\n" + "="*60)
+print("PREDICTING FUTURE GOLD PRICES (Next 12 Months)")
+print("="*60)
+
+# Get the last date and price in the dataset
+last_date = df['Date'].max()
+last_price = df['Gold_Price_USD_YFinance'].iloc[-1]
+print(f"\nLast known date: {last_date.strftime('%Y-%m-%d')}")
+print(f"Last known price: ${last_price:,.2f}\n")
+
+# Get recent historical prices for lag features
+recent_prices = df['Gold_Price_USD_YFinance'].tail(12).values
+
+# Create future dates (next 12 months)
+future_dates = pd.date_range(start=last_date + pd.DateOffset(months=1), periods=12, freq='MS')
+
+# Initialize prediction list and price history
+future_predictions = []
+price_history = list(recent_prices) + [last_price]  # Keep historical context
+
+for future_date in future_dates:
+    # Create feature row for future date
+    feature_row = pd.DataFrame({
+        'Year': [future_date.year],
+        'Month': [future_date.month],
+        'Quarter': [future_date.quarter],
+        'DayOfYear': [future_date.dayofyear],
+        'WeekOfYear': [future_date.isocalendar()[1]]
+    })
+    
+    # Use actual recent prices for lag features (recursive approach)
+    feature_row['Price_Lag1'] = [price_history[-1]]       # Last predicted or actual price
+    feature_row['Price_Lag3'] = [price_history[-3]]       # 3 months ago
+    feature_row['Price_Lag6'] = [price_history[-6]]       # 6 months ago
+    feature_row['Price_Lag12'] = [price_history[-12]]     # 12 months ago
+    
+    # Calculate moving averages from recent prices
+    feature_row['MA3'] = [np.mean(price_history[-3:])]    # 3-month MA
+    feature_row['MA6'] = [np.mean(price_history[-6:])]    # 6-month MA
+    feature_row['MA12'] = [np.mean(price_history[-12:])]  # 12-month MA
+    
+    # Volatility from recent prices
+    feature_row['Volatility'] = [np.std(price_history[-6:])]
+    
+    # Scale the features
+    feature_row_scaled = scaler.transform(feature_row)
+    feature_row_scaled = pd.DataFrame(feature_row_scaled, columns=X.columns)
+    
+    # Make prediction
+    predicted_price = best_model.predict(feature_row_scaled)[0]
+    
+    # Store prediction for next iteration (feedback loop)
+    price_history.append(predicted_price)
+    
+    future_predictions.append({
+        'Date': future_date,
+        'Predicted_Price': predicted_price
+    })
+
+# Create DataFrame for future predictions
+future_df = pd.DataFrame(future_predictions)
+
+print("Future Gold Price Predictions:")
+print("-" * 60)
+for idx, row in future_df.iterrows():
+    print(f"{row['Date'].strftime('%B %Y'):20} -> ${row['Predicted_Price']:,.2f}")
+
+# ---------------------------------------------------------
+# Average predicted price and trend
+# ---------------------------------------------------------
+
+print("\n" + "-" * 60)
+avg_future_price = future_df['Predicted_Price'].mean()
+current_price = df['Gold_Price_USD_YFinance'].iloc[-1]
+price_change = avg_future_price - current_price
+price_change_pct = (price_change / current_price) * 100
+
+print(f"Current Price (Latest): ${current_price:,.2f}")
+print(f"Average Predicted Price (Next 12 Months): ${avg_future_price:,.2f}")
+print(f"Predicted Change: ${price_change:,.2f} ({price_change_pct:+.2f}%)")
+
+if price_change > 0:
+    print(f"\n📈 Gold prices are expected to INCREASE over the next 12 months")
+elif price_change < -5:
+    print(f"\n📉 Gold prices are expected to DECREASE over the next 12 months")
+else:
+    print(f"\n➡️ Gold prices are expected to STABILIZE over the next 12 months")
+
+print("\n" + "="*60)
