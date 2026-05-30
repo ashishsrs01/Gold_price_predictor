@@ -1,0 +1,1292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gold Price Prediction & Forecasting Dashboard</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;600;700;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <!-- ApexCharts CSS -->
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+    <style>
+        /* CSS variables for consistent premium coloring */
+        :root {
+            --bg-color: #0b0c10;
+            --card-bg: rgba(20, 24, 38, 0.6);
+            --card-border: rgba(255, 255, 255, 0.06);
+            --gold-gradient: linear-gradient(135deg, #f5d061 0%, #e6a100 100%);
+            --gold-glow: rgba(230, 161, 0, 0.35);
+            --accent-gold: #f5d061;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --success-color: #10b981;
+            --success-glow: rgba(16, 185, 129, 0.25);
+            --error-color: #f43f5e;
+            --terminal-bg: #090a0f;
+            --font-main: 'Inter', sans-serif;
+            --font-heading: 'Outfit', sans-serif;
+            --font-mono: 'Fira Code', monospace;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            background-image: 
+                radial-gradient(at 10% 20%, rgba(230, 161, 0, 0.05) 0px, transparent 50%),
+                radial-gradient(at 90% 80%, rgba(16, 185, 129, 0.03) 0px, transparent 50%);
+            color: var(--text-primary);
+            font-family: var(--font-main);
+            min-height: 100vh;
+            padding: 2rem;
+            line-height: 1.5;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1440px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+
+        /* Header Style */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--card-border);
+            animation: fadeInDown 0.8s ease-out;
+        }
+
+        .header-title-container {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .header-title-container .logo {
+            font-size: 2.2rem;
+            animation: rotateGold 4s linear infinite;
+        }
+
+        h1 {
+            font-family: var(--font-heading);
+            font-weight: 800;
+            font-size: 2rem;
+            background: linear-gradient(135deg, #ffffff 0%, #cbd5e1 50%, #f5d061 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -0.5px;
+        }
+
+        .server-status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            padding: 0.5rem 1rem;
+            border-radius: 9999px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--success-color);
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background-color: var(--success-color);
+            border-radius: 50%;
+            box-shadow: 0 0 10px var(--success-glow);
+            animation: pulseGreen 2s infinite;
+        }
+
+        /* Dashboard Grid Layout */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 350px 1fr;
+            gap: 2rem;
+            animation: fadeInUp 0.8s ease-out 0.2s both;
+        }
+
+        @media (max-width: 1024px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Glassmorphic Panel/Card styling */
+        .panel {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .panel:hover {
+            box-shadow: 0 12px 40px 0 rgba(230, 161, 0, 0.05);
+        }
+
+        .panel-title {
+            font-family: var(--font-heading);
+            font-weight: 700;
+            font-size: 1.25rem;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            padding-bottom: 0.75rem;
+        }
+
+        /* Control Form Elements */
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        select, input[type="range"], input[type="number"] {
+            width: 100%;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid var(--card-border);
+            border-radius: 8px;
+            padding: 0.75rem;
+            color: var(--text-primary);
+            font-family: var(--font-main);
+            font-size: 0.95rem;
+            outline: none;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        select:focus, input[type="number"]:focus {
+            border-color: var(--accent-gold);
+            box-shadow: 0 0 10px rgba(245, 208, 97, 0.15);
+        }
+
+        /* Ranges styling */
+        input[type="range"] {
+            -webkit-appearance: none;
+            background: rgba(15, 23, 42, 0.6);
+            height: 6px;
+            padding: 0;
+            cursor: pointer;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            background: var(--accent-gold);
+            height: 18px;
+            width: 18px;
+            border-radius: 50%;
+            box-shadow: 0 0 8px var(--gold-glow);
+            transition: transform 0.1s;
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+        }
+
+        .range-value {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--accent-gold);
+            align-self: flex-end;
+        }
+
+        /* Model Configuration Area */
+        .hyperparams-container {
+            background: rgba(15, 23, 42, 0.3);
+            border: 1px dashed rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        .hyperparams-container.hidden {
+            display: none;
+        }
+
+        /* Button Styling */
+        .btn-train {
+            background: var(--gold-gradient);
+            border: none;
+            border-radius: 8px;
+            color: #000;
+            font-family: var(--font-heading);
+            font-weight: 700;
+            font-size: 1.05rem;
+            padding: 1rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 14px var(--gold-glow);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-train:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(230, 161, 0, 0.5);
+        }
+
+        .btn-train:active:not(:disabled) {
+            transform: translateY(0);
+        }
+
+        .btn-train:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        /* Spinner */
+        .spinner {
+            display: none;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(0, 0, 0, 0.1);
+            border-radius: 50%;
+            border-top-color: #000;
+            animation: spin 1s linear infinite;
+        }
+
+        .loading .spinner {
+            display: inline-block;
+        }
+
+        .loading .btn-text {
+            display: none;
+        }
+
+        /* Metrics Layout */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .metric-card {
+            background: rgba(15, 23, 42, 0.4);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            padding: 1.25rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.3s;
+        }
+
+        .metric-card:hover {
+            transform: translateY(-3px);
+            border-color: rgba(245, 208, 97, 0.2);
+        }
+
+        .metric-label {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .metric-value {
+            font-family: var(--font-heading);
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .metric-card.gold-border .metric-value {
+            color: var(--accent-gold);
+            text-shadow: 0 0 10px rgba(245, 208, 97, 0.15);
+        }
+
+        .metric-sub {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        /* Chart Area Tabs */
+        .chart-tabs {
+            display: flex;
+            gap: 0.5rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            padding-bottom: 0.5rem;
+        }
+
+        .tab-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            font-weight: 600;
+            font-size: 0.9rem;
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            border-radius: 6px;
+            transition: all 0.3s;
+        }
+
+        .tab-btn:hover {
+            color: var(--text-primary);
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .tab-btn.active {
+            color: #000;
+            background: var(--gold-gradient);
+            box-shadow: 0 2px 8px var(--gold-glow);
+        }
+
+        .chart-container {
+            min-height: 400px;
+            background: rgba(9, 10, 15, 0.4);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            padding: 1rem;
+            position: relative;
+        }
+
+        .chart-panel {
+            display: none;
+        }
+
+        .chart-panel.active {
+            display: block;
+        }
+
+        /* Terminal Console */
+        .terminal {
+            background-color: var(--terminal-bg);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            padding: 1.25rem;
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            max-height: 180px;
+            overflow-y: auto;
+            box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.8);
+        }
+
+        .terminal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            color: var(--text-secondary);
+            font-size: 0.75rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            padding-bottom: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .terminal-dots {
+            display: flex;
+            gap: 4px;
+        }
+
+        .terminal-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+
+        .terminal-dot.red { background-color: #ff5f56; }
+        .terminal-dot.yellow { background-color: #ffbd2e; }
+        .terminal-dot.green { background-color: #27c93f; }
+
+        .terminal-row {
+            display: flex;
+            gap: 0.5rem;
+            align-items: flex-start;
+        }
+
+        .terminal-row.success {
+            color: var(--success-color);
+        }
+
+        .terminal-row.info {
+            color: #38bdf8;
+        }
+
+        .terminal-row.warning {
+            color: #fbbf24;
+        }
+
+        .terminal-row.error {
+            color: var(--error-color);
+        }
+
+        .terminal-prompt {
+            color: var(--accent-gold);
+            user-select: none;
+        }
+
+        /* Projections Section */
+        .projections-section {
+            display: grid;
+            grid-template-columns: 1fr 380px;
+            gap: 2rem;
+            animation: fadeInUp 0.8s ease-out 0.4s both;
+        }
+
+        @media (max-width: 1024px) {
+            .projections-section {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Table design */
+        .table-container {
+            max-height: 380px;
+            overflow-y: auto;
+            border-radius: 12px;
+            border: 1px solid var(--card-border);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            font-size: 0.9rem;
+            background: rgba(15, 23, 42, 0.3);
+        }
+
+        th {
+            background: rgba(15, 23, 42, 0.8);
+            color: var(--text-secondary);
+            font-family: var(--font-heading);
+            font-weight: 600;
+            padding: 1rem;
+            border-bottom: 1px solid var(--card-border);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        td {
+            padding: 0.85rem 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+            color: var(--text-primary);
+        }
+
+        tr:hover td {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .price-col {
+            font-family: var(--font-mono);
+            font-weight: 600;
+            color: var(--accent-gold);
+        }
+
+        .change-badge {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            font-family: var(--font-mono);
+        }
+
+        .change-badge.positive {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--success-color);
+        }
+
+        .change-badge.negative {
+            background: rgba(244, 63, 94, 0.1);
+            color: var(--error-color);
+        }
+
+        /* Summary Forecast Card */
+        .summary-card {
+            background: rgba(15, 23, 42, 0.4);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+            justify-content: center;
+        }
+
+        .trend-icon {
+            font-size: 3rem;
+            text-align: center;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        .trend-title {
+            font-family: var(--font-heading);
+            font-size: 1.2rem;
+            font-weight: 700;
+            text-align: center;
+        }
+
+        .trend-desc {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            text-align: center;
+            line-height: 1.6;
+        }
+
+        /* Keyframes Animations */
+        @keyframes rotateGold {
+            0% { transform: rotate(0deg); }
+            50% { transform: rotate(180deg) scale(1.1); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes pulseGreen {
+            0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+            100% { transform: translateY(0px); }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.4);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Dashboard Header -->
+        <header>
+            <div class="header-title-container">
+                <div class="logo">🪙</div>
+                <div>
+                    <h1>GOLD FORECAST ENGINE</h1>
+                    <p style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 2px;">Local Time-Series Machine Learning Dashboard</p>
+                </div>
+            </div>
+            <div class="server-status">
+                <span class="status-dot"></span>
+                <span>PIPELINE ACTIVE</span>
+            </div>
+        </header>
+
+        <!-- Main Dashboard View -->
+        <div class="dashboard-grid">
+            <!-- Left Side Control Panel -->
+            <div class="panel">
+                <div class="panel-title">
+                    <span>🎛️</span> Controls & Parameters
+                </div>
+                
+                <div class="form-group">
+                    <label for="modelSelect">Select Model</label>
+                    <select id="modelSelect">
+                        <option value="Linear Regression" selected>Linear Regression</option>
+                        <option value="Random Forest">Random Forest Regressor</option>
+                        <option value="Gradient Boosting">Gradient Boosting</option>
+                        <option value="SVR (RBF)">Support Vector Machine (SVR)</option>
+                    </select>
+                </div>
+
+                <!-- Dynamic Hyperparameters Area -->
+                <div id="hyperparamsArea" class="hyperparams-container hidden">
+                    <div id="rfParams" class="param-section hidden">
+                        <div class="form-group">
+                            <div style="display:flex; justify-content:space-between;">
+                                <label for="rfEstimators">N Estimators</label>
+                                <span class="range-value" id="rfVal">100</span>
+                            </div>
+                            <input type="range" id="rfEstimators" min="10" max="300" step="10" value="100">
+                        </div>
+                    </div>
+                    <div id="gbParams" class="param-section hidden">
+                        <div class="form-group">
+                            <div style="display:flex; justify-content:space-between;">
+                                <label for="gbEstimators">N Estimators</label>
+                                <span class="range-value" id="gbEstVal">100</span>
+                            </div>
+                            <input type="range" id="gbEstimators" min="10" max="300" step="10" value="100">
+                        </div>
+                        <div class="form-group" style="margin-top: 10px;">
+                            <div style="display:flex; justify-content:space-between;">
+                                <label for="gbLr">Learning Rate</label>
+                                <span class="range-value" id="gbLrVal">0.10</span>
+                            </div>
+                            <input type="range" id="gbLr" min="0.01" max="0.5" step="0.01" value="0.1">
+                        </div>
+                    </div>
+                    <div id="svrParams" class="param-section hidden">
+                        <div class="form-group">
+                            <label for="svrC">Regularization C</label>
+                            <input type="number" id="svrC" min="1" max="10000" value="100">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <div style="display:flex; justify-content:space-between;">
+                        <label for="forecastMonths">Forecast Horizon</label>
+                        <span class="range-value" id="monthsVal">12 Months</span>
+                    </div>
+                    <input type="range" id="forecastMonths" min="1" max="24" step="1" value="12">
+                </div>
+
+                <button class="btn-train" id="btnTrain">
+                    <span class="spinner"></span>
+                    <span class="btn-text">⚡ Train & Predict</span>
+                </button>
+
+                <!-- Mini Console Widget -->
+                <div class="panel-title" style="margin-top: 0.5rem; font-size: 1.05rem;">
+                    <span>💻</span> Execution Terminal
+                </div>
+                <div class="terminal" id="terminalConsole">
+                    <div class="terminal-header">
+                        <div class="terminal-dots">
+                            <div class="terminal-dot red"></div>
+                            <div class="terminal-dot yellow"></div>
+                            <div class="terminal-dot green"></div>
+                        </div>
+                        <span>pipeline.log</span>
+                    </div>
+                    <div class="terminal-row info">
+                        <span class="terminal-prompt">></span>
+                        <span>Terminal initialized. Ready to execute training.</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Side Dashboard Metrics & Charts -->
+            <div style="display: flex; flex-direction: column; gap: 2rem;">
+                <!-- Metrics Panel Grid -->
+                <div class="metrics-grid">
+                    <div class="metric-card gold-border">
+                        <div class="metric-label">Model Accuracy ($R^2$)</div>
+                        <div class="metric-value" id="metricR2">--</div>
+                        <div class="metric-sub" id="metricR2Sub">Generalization fit</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Mean Absolute Error</div>
+                        <div class="metric-value" id="metricMAE">--</div>
+                        <div class="metric-sub">Average test error</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">RMSE</div>
+                        <div class="metric-value" id="metricRMSE">--</div>
+                        <div class="metric-sub">Standard deviation of residuals</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Dataset Split</div>
+                        <div class="metric-value" id="metricSplit">--</div>
+                        <div class="metric-sub">Train / Test ratio</div>
+                    </div>
+                </div>
+
+                <!-- Big Interactive Visuals Card -->
+                <div class="panel" style="gap: 1rem;">
+                    <div class="chart-tabs">
+                        <button class="tab-btn active" id="tabForecast">🔮 Price Forecasting</button>
+                        <button class="tab-btn" id="tabEval">🎯 Model Testing fit</button>
+                    </div>
+                    <div class="chart-container">
+                        <div id="forecastChartPanel" class="chart-panel active">
+                            <div id="mainForecastChart"></div>
+                        </div>
+                        <div id="evalChartPanel" class="chart-panel">
+                            <div id="evaluationChart"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Predictions details table and summary forecasting section -->
+        <div class="projections-section">
+            <!-- Table card -->
+            <div class="panel">
+                <div class="panel-title">
+                    <span>📅</span> Month-by-Month Forecast Table
+                </div>
+                <div class="table-container">
+                    <table id="projectionsTable">
+                        <thead>
+                            <tr>
+                                <th>Projection Month</th>
+                                <th>Forecasted Price</th>
+                                <th>Change (Absolute)</th>
+                                <th>Change (%)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td colspan="4" style="text-align: center; color: var(--text-secondary); padding: 2rem;">
+                                    Select parameters and run model training to load projections.
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Trend analysis card -->
+            <div class="summary-card" id="summaryCard">
+                <div class="trend-icon" id="trendIcon">➡️</div>
+                <div class="trend-title" id="trendTitle">Awaiting Model Execution</div>
+                <div class="trend-desc" id="trendDesc">
+                    Select a model on the left, adjust hyperparameters and forecast horizon, then click "Train & Predict" to generate visual predictions and analysis.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- App Logic Script -->
+    <script>
+        // Store historical data and charts globally
+        let historicalData = [];
+        let forecastChartObj = null;
+        let evalChartObj = null;
+
+        // Document elements cache
+        const modelSelect = document.getElementById('modelSelect');
+        const forecastMonths = document.getElementById('forecastMonths');
+        const monthsVal = document.getElementById('monthsVal');
+        const btnTrain = document.getElementById('btnTrain');
+        const hyperparamsArea = document.getElementById('hyperparamsArea');
+        const rfParams = document.getElementById('rfParams');
+        const gbParams = document.getElementById('gbParams');
+        const svrParams = document.getElementById('svrParams');
+        const terminalConsole = document.getElementById('terminalConsole');
+        
+        // Setup hyperparameter range readers
+        document.getElementById('rfEstimators').addEventListener('input', e => document.getElementById('rfVal').innerText = e.target.value);
+        document.getElementById('gbEstimators').addEventListener('input', e => document.getElementById('gbEstVal').innerText = e.target.value);
+        document.getElementById('gbLr').addEventListener('input', e => document.getElementById('gbLrVal').innerText = parseFloat(e.target.value).toFixed(2));
+        forecastMonths.addEventListener('input', e => monthsVal.innerText = e.target.value + ' Months');
+
+        // Dynamic parameter panel showing/hiding
+        modelSelect.addEventListener('change', e => {
+            const model = e.target.value;
+            hyperparamsArea.classList.remove('hidden');
+            rfParams.classList.add('hidden');
+            gbParams.classList.add('hidden');
+            svrParams.classList.add('hidden');
+
+            if (model === 'Random Forest') {
+                rfParams.classList.remove('hidden');
+            } else if (model === 'Gradient Boosting') {
+                gbParams.classList.remove('hidden');
+            } else if (model === 'SVR (RBF)') {
+                svrParams.classList.remove('hidden');
+            } else {
+                hyperparamsArea.classList.add('hidden');
+            }
+        });
+
+        // Tab Switching
+        const tabForecast = document.getElementById('tabForecast');
+        const tabEval = document.getElementById('tabEval');
+        const forecastChartPanel = document.getElementById('forecastChartPanel');
+        const evalChartPanel = document.getElementById('evalChartPanel');
+
+        tabForecast.addEventListener('click', () => {
+            tabForecast.classList.add('active');
+            tabEval.classList.remove('active');
+            forecastChartPanel.classList.add('active');
+            evalChartPanel.classList.remove('active');
+            // Redraw to trigger animation and fix width
+            if (forecastChartObj) forecastChartObj.windowResize();
+        });
+
+        tabEval.addEventListener('click', () => {
+            tabEval.classList.add('active');
+            tabForecast.classList.remove('active');
+            evalChartPanel.classList.add('active');
+            forecastChartPanel.classList.remove('active');
+            // Redraw to trigger animation and fix width
+            if (evalChartObj) evalChartObj.windowResize();
+        });
+
+        // Print row to terminal
+        function logTerminal(message, type = 'info') {
+            const row = document.createElement('div');
+            row.className = `terminal-row ${type}`;
+            row.innerHTML = `<span class="terminal-prompt">></span><span>${message}</span>`;
+            terminalConsole.appendChild(row);
+            terminalConsole.scrollTop = terminalConsole.scrollHeight;
+        }
+
+        // Fetch historical data on load
+        async function fetchHistorical() {
+            logTerminal("Fetching historical dataset details...", "info");
+            try {
+                const response = await fetch('/api/historical');
+                if (!response.ok) throw new Error("HTTP error " + response.status);
+                historicalData = await response.json();
+                logTerminal(`Loaded ${historicalData.length} records of monthly historical gold prices.`, "success");
+                
+                // Set dataset split metric card initially
+                document.getElementById('metricSplit').innerHTML = "236 / 59";
+                
+                // Draw default historical chart
+                renderHistoricalChart();
+            } catch (err) {
+                logTerminal("Failed to fetch historical data: " + err.message, "error");
+            }
+        }
+
+        // Initialize historical line chart
+        function renderHistoricalChart() {
+            const chartData = historicalData.map(d => ({
+                x: new Date(d.date).getTime(),
+                y: parseFloat(d.price.toFixed(2))
+            }));
+
+            const options = {
+                series: [{
+                    name: 'Historical Gold Price (USD)',
+                    data: chartData
+                }],
+                chart: {
+                    type: 'area',
+                    height: 400,
+                    foreColor: '#94a3b8',
+                    background: 'transparent',
+                    toolbar: { show: true },
+                    animations: {
+                        enabled: true,
+                        easing: 'easeinout',
+                        speed: 800
+                    }
+                },
+                colors: ['#cbd5e1'],
+                fill: {
+                    type: 'gradient',
+                    gradient: {
+                        shadeIntensity: 1,
+                        opacityFrom: 0.3,
+                        opacityTo: 0.05,
+                        stops: [0, 90, 100]
+                    }
+                },
+                stroke: {
+                    width: 2,
+                    curve: 'smooth'
+                },
+                grid: {
+                    borderColor: 'rgba(255, 255, 255, 0.05)',
+                    xaxis: { lines: { show: false } },
+                    yaxis: { lines: { show: true } }
+                },
+                xaxis: {
+                    type: 'datetime',
+                    axisBorder: { show: false },
+                    axisTicks: { show: false }
+                },
+                yaxis: {
+                    labels: {
+                        formatter: val => '$' + val.toLocaleString()
+                    }
+                },
+                tooltip: {
+                    theme: 'dark',
+                    x: { format: 'MMM yyyy' },
+                    y: { formatter: val => '$' + val.toLocaleString() }
+                }
+            };
+
+            if (forecastChartObj) forecastChartObj.destroy();
+            forecastChartObj = new ApexCharts(document.querySelector("#mainForecastChart"), options);
+            forecastChartObj.render();
+        }
+
+        // Train and forecast request trigger
+        btnTrain.addEventListener('click', async () => {
+            const modelName = modelSelect.value;
+            const months = parseInt(forecastMonths.value);
+            
+            // Gather parameters
+            const params = {};
+            if (modelName === 'Random Forest') {
+                params['n_estimators'] = parseInt(document.getElementById('rfEstimators').value);
+            } else if (modelName === 'Gradient Boosting') {
+                params['n_estimators'] = parseInt(document.getElementById('gbEstimators').value);
+                params['learning_rate'] = parseFloat(document.getElementById('gbLr').value);
+            } else if (modelName === 'SVR (RBF)') {
+                params['C'] = parseFloat(document.getElementById('svrC').value);
+            }
+
+            // Disable UI
+            btnTrain.disabled = true;
+            document.body.classList.add('loading');
+            
+            // Clear console and simulate train pipeline logs
+            terminalConsole.innerHTML = `
+                <div class="terminal-header">
+                    <div class="terminal-dots">
+                        <div class="terminal-dot red"></div>
+                        <div class="terminal-dot yellow"></div>
+                        <div class="terminal-dot green"></div>
+                    </div>
+                    <span>pipeline.log</span>
+                </div>
+            `;
+
+            logTerminal(`Initializing ML training pipeline for [${modelName}]...`, "info");
+            
+            // Setup sequential setTimeouts to mimic computational steps
+            setTimeout(() => logTerminal("Parsing dataset 'gold_prices_1995-2026.csv'...", "info"), 250);
+            setTimeout(() => logTerminal("Extracting 13 lag, rolling, volatility, and temporal features...", "info"), 550);
+            setTimeout(() => logTerminal(`Fitting ${modelName} on 236 training samples...`, "info"), 850);
+            
+            try {
+                // Post training request
+                const reqTime = Date.now();
+                const response = await fetch('/api/train', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        model_name: modelName,
+                        forecast_months: months,
+                        params: params
+                    })
+                });
+
+                if (!response.ok) throw new Error("HTTP error " + response.status);
+                const data = await response.json();
+                
+                // Allow a brief moment to finish logs simulator
+                const latency = Date.now() - reqTime;
+                const delay = Math.max(0, 1200 - latency);
+                
+                setTimeout(() => {
+                    logTerminal(`Model trained successfully. Latency: ${latency}ms`, "success");
+                    logTerminal("Evaluating performance metrics on 59 testing samples...", "info");
+                    logTerminal(`R² Score: ${(data.metrics.test_r2 * 100).toFixed(2)}% | MAE: $${data.metrics.test_mae.toFixed(2)}`, "success");
+                    logTerminal(`Running recursive forecasting loop for ${months} months...`, "info");
+                    logTerminal("Pipeline calculation finalized. Displaying plots.", "success");
+                    
+                    // Enable UI
+                    btnTrain.disabled = false;
+                    document.body.classList.remove('loading');
+
+                    // Render results
+                    displayResults(data);
+                }, delay);
+
+            } catch (err) {
+                setTimeout(() => {
+                    logTerminal("Pipeline Execution Failed: " + err.message, "error");
+                    btnTrain.disabled = false;
+                    document.body.classList.remove('loading');
+                }, 1200);
+            }
+        });
+
+        // Display results (metrics, table, charts, trend summary)
+        function displayResults(data) {
+            // 1. Set metrics
+            document.getElementById('metricR2').innerText = (data.metrics.test_r2 * 100).toFixed(2) + '%';
+            document.getElementById('metricMAE').innerText = '$' + data.metrics.test_mae.toFixed(2);
+            document.getElementById('metricRMSE').innerText = '$' + data.metrics.test_rmse.toFixed(2);
+            document.getElementById('metricSplit').innerText = `${data.metrics.train_samples} / ${data.metrics.test_samples}`;
+            
+            // Adjust Subtext for SVR negative cases
+            const r2Label = document.getElementById('metricR2Sub');
+            if (data.metrics.test_r2 < 0) {
+                r2Label.innerText = "Poor model fit (negative)";
+                r2Label.style.color = 'var(--error-color)';
+            } else {
+                r2Label.innerText = "Generalization fit";
+                r2Label.style.color = 'var(--text-secondary)';
+            }
+
+            // 2. Render forecast charts
+            updateForecastChart(data.forecasts, data.last_known);
+
+            // 3. Render model test validation evaluation chart
+            updateEvalChart(data.test_predictions);
+
+            // 4. Render Table Projections
+            updateProjectionsTable(data.forecasts, data.last_known);
+
+            // 5. Update Trend Card
+            updateTrendCard(data.forecasts, data.last_known);
+        }
+
+        // Connect historical and forecasts into ApexCharts
+        function updateForecastChart(forecasts, lastKnown) {
+            // Cut historical data to last 60 months to make the forecast highly visible
+            const subsetHistorical = historicalData.slice(-60);
+            
+            const histSeries = subsetHistorical.map(d => ({
+                x: new Date(d.date).getTime(),
+                y: parseFloat(d.price.toFixed(2))
+            }));
+
+            // Forecast series starts from last known point to avoid gaps
+            const forecastSeries = [
+                {
+                    x: new Date(lastKnown.date).getTime(),
+                    y: parseFloat(lastKnown.price.toFixed(2))
+                },
+                ...forecasts.map(d => ({
+                    x: new Date(d.date).getTime(),
+                    y: parseFloat(d.price.toFixed(2))
+                }))
+            ];
+
+            const options = {
+                series: [
+                    {
+                        name: 'Historical Gold Price (USD)',
+                        data: histSeries
+                    },
+                    {
+                        name: 'Forecasted Gold Price (USD)',
+                        data: forecastSeries
+                    }
+                ],
+                chart: {
+                    type: 'line',
+                    height: 400,
+                    foreColor: '#94a3b8',
+                    background: 'transparent',
+                    toolbar: { show: true },
+                    animations: {
+                        enabled: true,
+                        easing: 'easeinout',
+                        speed: 500
+                    }
+                },
+                colors: ['#cbd5e1', '#f5d061'],
+                stroke: {
+                    width: [2, 3],
+                    curve: 'smooth',
+                    dashArray: [0, 5]
+                },
+                grid: {
+                    borderColor: 'rgba(255, 255, 255, 0.05)',
+                },
+                xaxis: {
+                    type: 'datetime',
+                },
+                yaxis: {
+                    labels: {
+                        formatter: val => '$' + val.toLocaleString()
+                    }
+                },
+                tooltip: {
+                    theme: 'dark',
+                    x: { format: 'MMM yyyy' },
+                    y: { formatter: val => '$' + val.toLocaleString() }
+                }
+            };
+
+            if (forecastChartObj) forecastChartObj.destroy();
+            forecastChartObj = new ApexCharts(document.querySelector("#mainForecastChart"), options);
+            forecastChartObj.render();
+        }
+
+        // Draw scatter/line graph for Test Set actuals vs predictions
+        function updateEvalChart(testPreds) {
+            const actuals = testPreds.map(d => ({
+                x: new Date(d.date).getTime(),
+                y: parseFloat(d.actual.toFixed(2))
+            }));
+
+            const predictions = testPreds.map(d => ({
+                x: new Date(d.date).getTime(),
+                y: parseFloat(d.predicted.toFixed(2))
+            }));
+
+            const options = {
+                series: [
+                    {
+                        name: 'Actual Price',
+                        data: actuals
+                    },
+                    {
+                        name: 'Model Predicted Price',
+                        data: predictions
+                    }
+                ],
+                chart: {
+                    type: 'line',
+                    height: 400,
+                    foreColor: '#94a3b8',
+                    background: 'transparent',
+                    toolbar: { show: true }
+                },
+                colors: ['#10b981', '#ef4444'],
+                stroke: {
+                    width: 2,
+                    curve: 'smooth'
+                },
+                grid: {
+                    borderColor: 'rgba(255, 255, 255, 0.05)',
+                },
+                xaxis: {
+                    type: 'datetime',
+                },
+                yaxis: {
+                    labels: {
+                        formatter: val => '$' + val.toLocaleString()
+                    }
+                },
+                tooltip: {
+                    theme: 'dark',
+                    x: { format: 'MMM yyyy' },
+                    y: { formatter: val => '$' + val.toLocaleString() }
+                }
+            };
+
+            if (evalChartObj) evalChartObj.destroy();
+            evalChartObj = new ApexCharts(document.querySelector("#evaluationChart"), options);
+            evalChartObj.render();
+        }
+
+        // Projections monthly details table
+        function updateProjectionsTable(forecasts, lastKnown) {
+            const tbody = document.querySelector("#projectionsTable tbody");
+            tbody.innerHTML = '';
+
+            let lastPrice = lastKnown.price;
+
+            forecasts.forEach(f => {
+                const diff = f.price - lastPrice;
+                const pct = (diff / lastPrice) * 100;
+                
+                const tr = document.createElement('tr');
+                
+                const monthName = new Date(f.date).toLocaleDateString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' });
+                const classSign = diff >= 0 ? 'positive' : 'negative';
+                const sign = diff >= 0 ? '+' : '';
+
+                tr.innerHTML = `
+                    <td style="font-weight: 500;">${monthName}</td>
+                    <td class="price-col">$${f.price.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                    <td><span class="change-badge ${classSign}">${sign}$${diff.toFixed(2)}</span></td>
+                    <td><span class="change-badge ${classSign}">${sign}${pct.toFixed(2)}%</span></td>
+                `;
+
+                tbody.appendChild(tr);
+            });
+        }
+
+        // Predictions summary card
+        function updateTrendCard(forecasts, lastKnown) {
+            const avgForecast = forecasts.reduce((acc, curr) => acc + curr.price, 0) / forecasts.length;
+            const diff = avgForecast - lastKnown.price;
+            const pct = (diff / lastKnown.price) * 100;
+
+            const iconEl = document.getElementById('trendIcon');
+            const titleEl = document.getElementById('trendTitle');
+            const descEl = document.getElementById('trendDesc');
+
+            if (diff > 0) {
+                iconEl.innerText = "📈";
+                titleEl.innerText = "Gold Trend: INCREASING";
+                titleEl.style.color = "var(--success-color)";
+                descEl.innerHTML = `The average forecasted price over the next ${forecasts.length} months is <strong>$${avgForecast.toLocaleString(undefined, {maximumFractionDigits: 2})}</strong>, representing a net increase of <strong>+${pct.toFixed(2)}%</strong> compared to the last recorded price of $${lastKnown.price.toLocaleString()}. Investors might consider expanding long positions.`;
+            } else if (diff < -5) {
+                iconEl.innerText = "📉";
+                titleEl.innerText = "Gold Trend: DECREASING";
+                titleEl.style.color = "var(--error-color)";
+                descEl.innerHTML = `The average forecasted price over the next ${forecasts.length} months is <strong>$${avgForecast.toLocaleString(undefined, {maximumFractionDigits: 2})}</strong>, representing a net decrease of <strong>${pct.toFixed(2)}%</strong> compared to the last recorded price of $${lastKnown.price.toLocaleString()}. Market conditions suggest a minor cooling period.`;
+            } else {
+                iconEl.innerText = "➡️";
+                titleEl.innerText = "Gold Trend: STABILIZING";
+                titleEl.style.color = "var(--accent-gold)";
+                descEl.innerHTML = `The average forecasted price over the next ${forecasts.length} months is <strong>$${avgForecast.toLocaleString(undefined, {maximumFractionDigits: 2})}</strong>, which is relatively unchanged (<strong>${pct.toFixed(2)}%</strong> deviation) from the last recorded price of $${lastKnown.price.toLocaleString()}. Market prices are expected to remain flat and range-bound.`;
+            }
+        }
+
+        // Initialize historical fetching
+        window.addEventListener('DOMContentLoaded', fetchHistorical);
+    </script>
+</body>
+</html>

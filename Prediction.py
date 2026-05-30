@@ -310,3 +310,160 @@ else:
     print(f"\n[=] Gold prices are expected to STABILIZE over the next 12 months")
 
 print("\n" + "="*60)
+
+
+# =========================================================
+# Programmatic Function for Web API Dashboard Integration
+# =========================================================
+
+def train_and_forecast_programmatic(model_name, forecast_months=12, params=None):
+    import pandas as pd
+    import numpy as np
+    from sklearn.preprocessing import StandardScaler
+    from sklearn.model_selection import train_test_split
+    from sklearn.linear_model import LinearRegression
+    from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
+    from sklearn.svm import SVR
+    from sklearn.metrics import mean_squared_error, r2_score, mean_absolute_error
+
+    # Load dataset
+    df = pd.read_csv('gold_prices_1995-2026.csv')
+    df = df.dropna()
+    if 'Date' in df.columns:
+        df['Date'] = pd.to_datetime(df['Date'])
+    df = df.drop_duplicates()
+    
+    # Advanced Feature Engineering
+    df['Year'] = df['Date'].dt.year
+    df['Month'] = df['Date'].dt.month
+    df['Quarter'] = df['Date'].dt.quarter
+    df['DayOfYear'] = df['Date'].dt.dayofyear
+    df['WeekOfYear'] = df['Date'].dt.isocalendar().week.astype(int)
+    
+    # Lag features
+    df['Price_Lag1'] = df['Gold_Price_USD_YFinance'].shift(1)
+    df['Price_Lag3'] = df['Gold_Price_USD_YFinance'].shift(3)
+    df['Price_Lag6'] = df['Gold_Price_USD_YFinance'].shift(6)
+    df['Price_Lag12'] = df['Gold_Price_USD_YFinance'].shift(12)
+    
+    # Rolling averages
+    df['MA3'] = df['Gold_Price_USD_YFinance'].rolling(window=3).mean()
+    df['MA6'] = df['Gold_Price_USD_YFinance'].rolling(window=6).mean()
+    df['MA12'] = df['Gold_Price_USD_YFinance'].rolling(window=12).mean()
+    
+    # Volatility
+    df['Volatility'] = df['Gold_Price_USD_YFinance'].rolling(window=6).std()
+    
+    df = df.dropna()
+    
+    X = df.drop(['Gold_Price_USD_YFinance', 'Date'], axis=1)
+    y = df['Gold_Price_USD_YFinance']
+    X = pd.get_dummies(X, drop_first=True)
+    
+    scaler = StandardScaler()
+    X_scaled = scaler.fit_transform(X)
+    X_scaled = pd.DataFrame(X_scaled, columns=X.columns)
+    
+    X_train, X_test, y_train, y_test = train_test_split(
+        X_scaled, y, test_size=0.2, random_state=42
+    )
+    
+    # Set model hyperparameters
+    if params is None:
+        params = {}
+        
+    if model_name == 'Linear Regression':
+        model = LinearRegression()
+    elif model_name == 'Random Forest':
+        n_estimators = int(params.get('n_estimators', 100))
+        model = RandomForestRegressor(n_estimators=n_estimators, random_state=42, n_jobs=-1)
+    elif model_name == 'Gradient Boosting':
+        n_estimators = int(params.get('n_estimators', 100))
+        learning_rate = float(params.get('learning_rate', 0.1))
+        model = GradientBoostingRegressor(n_estimators=n_estimators, learning_rate=learning_rate, random_state=42)
+    elif model_name == 'SVR (RBF)':
+        C = float(params.get('C', 100))
+        model = SVR(kernel='rbf', C=C, gamma='scale')
+    else:
+        raise ValueError(f"Unknown model name: {model_name}")
+        
+    model.fit(X_train, y_train)
+    
+    y_pred_train = model.predict(X_train)
+    y_pred_test = model.predict(X_test)
+    
+    train_r2 = r2_score(y_train, y_pred_train)
+    test_r2 = r2_score(y_test, y_pred_test)
+    test_mae = mean_absolute_error(y_test, y_pred_test)
+    test_rmse = np.sqrt(mean_squared_error(y_test, y_pred_test))
+    
+    # Future forecasting
+    last_date = df['Date'].max()
+    last_price = df['Gold_Price_USD_YFinance'].iloc[-1]
+    
+    recent_prices = df['Gold_Price_USD_YFinance'].tail(12).values
+    future_dates = pd.date_range(start=last_date + pd.DateOffset(months=1), periods=forecast_months, freq='MS')
+    
+    future_predictions = []
+    price_history = list(recent_prices) + [last_price]
+    
+    for future_date in future_dates:
+        feature_row = pd.DataFrame({
+            'Year': [future_date.year],
+            'Month': [future_date.month],
+            'Quarter': [future_date.quarter],
+            'DayOfYear': [future_date.dayofyear],
+            'WeekOfYear': [int(future_date.isocalendar()[1])]
+        })
+        
+        feature_row['Price_Lag1'] = [price_history[-1]]
+        feature_row['Price_Lag3'] = [price_history[-3]]
+        feature_row['Price_Lag6'] = [price_history[-6]]
+        feature_row['Price_Lag12'] = [price_history[-12]]
+        
+        feature_row['MA3'] = [np.mean(price_history[-3:])]
+        feature_row['MA6'] = [np.mean(price_history[-6:])]
+        feature_row['MA12'] = [np.mean(price_history[-12:])]
+        
+        feature_row['Volatility'] = [np.std(price_history[-6:])]
+        
+        feature_row_scaled = scaler.transform(feature_row)
+        feature_row_scaled = pd.DataFrame(feature_row_scaled, columns=X.columns)
+        
+        predicted_price = model.predict(feature_row_scaled)[0]
+        price_history.append(predicted_price)
+        
+        future_predictions.append({
+            'date': future_date.strftime('%Y-%m-%d'),
+            'price': float(predicted_price)
+        })
+        
+    test_results = []
+    test_dates = df.loc[y_test.index, 'Date'].dt.strftime('%Y-%m-%d').values
+    for date, actual, pred in zip(test_dates, y_test.values, y_pred_test):
+        test_results.append({
+            'date': date,
+            'actual': float(actual),
+            'predicted': float(pred)
+        })
+        
+    test_results = sorted(test_results, key=lambda x: x['date'])
+    
+    return {
+        'metrics': {
+            'train_r2': float(train_r2),
+            'test_r2': float(test_r2),
+            'test_mae': float(test_mae),
+            'test_rmse': float(test_rmse),
+            'train_samples': int(len(X_train)),
+            'test_samples': int(len(X_test)),
+            'total_samples': int(len(df))
+        },
+        'test_predictions': test_results,
+        'forecasts': future_predictions,
+        'last_known': {
+            'date': last_date.strftime('%Y-%m-%d'),
+            'price': float(last_price)
+        }
+    }
+
