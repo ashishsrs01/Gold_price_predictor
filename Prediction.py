@@ -303,10 +303,10 @@ print(f"Average Predicted Price (Next 12 Months): ${avg_future_price:,.2f}")
 print(f"Predicted Change: ${price_change:,.2f} ({price_change_pct:+.2f}%)")
 
 if price_change > 0:
-    print(f"\n📈 Gold prices are expected to INCREASE over the next 12 months")
+    print(f"\n[+] Gold prices are expected to INCREASE over the next 12 months")
 elif price_change < -5:
-    print(f"\n📉 Gold prices are expected to DECREASE over the next 12 months")
+    print(f"\n[-] Gold prices are expected to DECREASE over the next 12 months")
 else:
-    print(f"\n➡️ Gold prices are expected to STABILIZE over the next 12 months")
+    print(f"\n[=] Gold prices are expected to STABILIZE over the next 12 months")
 
 print("\n" + "="*60)
