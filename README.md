@@ -9,6 +9,12 @@ A high-performance machine learning pipeline designed to analyze historical gold
 
 ---
 
+## Project visuals
+
+![alt text](image.png)
+
+---
+
 ## 🛠️ Project Architecture
 
 The pipeline ingests raw monthly price data, cleans it, engineers custom lag and rolling features, trains four distinct regressors, selects the best-performing model, and predicts the gold price for the next 12 months recursively.
@@ -122,4 +128,4 @@ Using the recursive **Linear Regression** model, the pipeline forecasts the foll
 | **February 2027** | $4,668.19 |
 
 > [!TIP]
-> The forecasted decrease of **-2.23%** indicates that gold prices are expected to experience a minor cooling period, stabilizing around the high $4,600s to low $4,800s over the next 12 months.
+> The forecasted decrease of **-2.23%** indicates that gold prices are expected to experience a minor cooling period, stabilizing around the high $4,600s to low $4,800s over the next 12 months.
